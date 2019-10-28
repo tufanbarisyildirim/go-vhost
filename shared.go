@@ -14,13 +14,13 @@ const (
 type sharedConn struct {
 	sync.Mutex
 	net.Conn               // the raw connection
-	vhostBuf *bytes.Buffer // all of the initial data that has to be read in order to vhost a connection is saved here
+	VhostBuf *bytes.Buffer // all of the initial data that has to be read in order to vhost a connection is saved here
 }
 
 func newShared(conn net.Conn) (*sharedConn, io.Reader) {
 	c := &sharedConn{
 		Conn:     conn,
-		vhostBuf: bytes.NewBuffer(make([]byte, 0, initVhostBufSize)),
+		VhostBuf: bytes.NewBuffer(make([]byte, 0, initVhostBufSize)),
 	}
 
 	return c, io.TeeReader(conn, c.vhostBuf)
