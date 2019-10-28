@@ -7,7 +7,7 @@ import (
 )
 
 type HTTPConn struct {
-	*sharedConn
+	*SharedConn
 	Request *http.Request
 }
 
@@ -16,7 +16,7 @@ type HTTPConn struct {
 func HTTP(conn net.Conn) (httpConn *HTTPConn, err error) {
 	c, rd := newShared(conn)
 
-	httpConn = &HTTPConn{sharedConn: c}
+	httpConn = &HTTPConn{SharedConn: c}
 	if httpConn.Request, err = http.ReadRequest(bufio.NewReader(rd)); err != nil {
 		return
 	}
