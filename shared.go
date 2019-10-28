@@ -23,22 +23,22 @@ func newShared(conn net.Conn) (*SharedConn, io.Reader) {
 		VhostBuf: bytes.NewBuffer(make([]byte, 0, initVhostBufSize)),
 	}
 
-	return c, io.TeeReader(conn, c.vhostBuf)
+	return c, io.TeeReader(conn, c.VhostBuf)
 }
 
 func (c *SharedConn) Read(p []byte) (n int, err error) {
 	c.Lock()
-	if c.vhostBuf == nil {
+	if c.VhostBuf == nil {
 		c.Unlock()
 		return c.Conn.Read(p)
 	}
-	n, err = c.vhostBuf.Read(p)
+	n, err = c.VhostBuf.Read(p)
 
 	// end of the request buffer
 	if err == io.EOF {
 		// let the request buffer get garbage collected
 		// and make sure we don't read from it again
-		c.vhostBuf = nil
+		c.VhostBuf = nil
 
 		// continue reading from the connection
 		var n2 int
