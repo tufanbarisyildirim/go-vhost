@@ -78,7 +78,7 @@ const (
 // A Conn represents a secured connection.
 // It implements the net.Conn interface.
 type TLSConn struct {
-	*sharedConn
+	*SharedConn
 	ClientHelloMsg *ClientHelloMsg
 }
 
@@ -87,7 +87,7 @@ type TLSConn struct {
 func TLS(conn net.Conn) (tlsConn *TLSConn, err error) {
 	c, rd := newShared(conn)
 
-	tlsConn = &TLSConn{sharedConn: c}
+	tlsConn = &TLSConn{SharedConn: c}
 	if tlsConn.ClientHelloMsg, err = readClientHello(rd); err != nil {
 		return
 	}
