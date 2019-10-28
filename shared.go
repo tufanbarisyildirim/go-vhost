@@ -11,14 +11,14 @@ const (
 	initVhostBufSize = 1024 // allocate 1 KB up front to try to avoid resizing
 )
 
-type sharedConn struct {
+type SharedConn struct {
 	sync.Mutex
 	net.Conn               // the raw connection
 	VhostBuf *bytes.Buffer // all of the initial data that has to be read in order to vhost a connection is saved here
 }
 
-func newShared(conn net.Conn) (*sharedConn, io.Reader) {
-	c := &sharedConn{
+func newShared(conn net.Conn) (*SharedConn, io.Reader) {
+	c := &SharedConn{
 		Conn:     conn,
 		VhostBuf: bytes.NewBuffer(make([]byte, 0, initVhostBufSize)),
 	}
@@ -26,7 +26,7 @@ func newShared(conn net.Conn) (*sharedConn, io.Reader) {
 	return c, io.TeeReader(conn, c.vhostBuf)
 }
 
-func (c *sharedConn) Read(p []byte) (n int, err error) {
+func (c *SharedConn) Read(p []byte) (n int, err error) {
 	c.Lock()
 	if c.vhostBuf == nil {
 		c.Unlock()
