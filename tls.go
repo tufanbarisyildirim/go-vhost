@@ -209,7 +209,7 @@ func readClientHello(rd io.Reader) (*ClientHelloMsg, error) {
 		typ := recordType(b.data[0])
 
 		// No valid TLS record has a type of 0x80, however SSLv2 handshakes
-		// start with a uint16 length where the MSB is set and the first record
+		// start with a uint16 length where the MSB is Set and the first record
 		// is always < 256 bytes long. Therefore typ == 0x80 strongly suggests
 		// an SSLv2 client.
 		if typ == 0x80 {

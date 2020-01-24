@@ -36,7 +36,7 @@ func (c *SharedConn) Read(p []byte) (n int, err error) {
 
 	// end of the request buffer
 	if err == io.EOF {
-		// let the request buffer get garbage collected
+		// let the request buffer Get garbage collected
 		// and make sure we don't read from it again
 		c.VhostBuf = nil
 

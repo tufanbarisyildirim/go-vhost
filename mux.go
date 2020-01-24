@@ -35,9 +35,9 @@ type Closed struct {
 }
 
 type (
-	// this is the function you apply to a net.Conn to get
+	// this is the function you apply to a net.Conn to Get
 	// a new virtual-host multiplexed connection
-	muxFn func(net.Conn) (Conn, error)
+	muxFn func(net.Conn, *VhostMuxer) (Conn, error)
 
 	// an error encountered when multiplexing a connection
 	muxErr struct {
@@ -79,7 +79,7 @@ func (m *VhostMuxer) Listen(name string) (net.Listener, error) {
 		accept: make(chan Conn),
 	}
 
-	if err := m.set(name, vhost); err != nil {
+	if err := m.Set(name, vhost); err != nil {
 		return nil, err
 	}
 
@@ -126,7 +126,7 @@ func (m *VhostMuxer) handle(conn net.Conn) {
 
 	// Make sure we detect dead connections while we decide how to multiplex
 	if err := conn.SetDeadline(time.Now().Add(m.muxTimeout)); err != nil {
-		m.sendError(conn, fmt.Errorf("Failed to set deadline: %v", err))
+		m.sendError(conn, fmt.Errorf("Failed to Set deadline: %v", err))
 		return
 	}
 
@@ -135,9 +135,9 @@ func (m *VhostMuxer) handle(conn net.Conn) {
 			m.sendError(conn, fmt.Errorf("Failed to reset connection deadline: %v", err))
 		}
 	}
-	
+
 	// extract the name
-	vconn, err := m.vhostFn(conn)
+	vconn, err := m.vhostFn(conn, m)
 	if err != nil {
 		m.sendError(conn, BadRequest{fmt.Errorf("Failed to extract vhost name: %v", err)})
 		resetDeadline(conn)
@@ -148,7 +148,7 @@ func (m *VhostMuxer) handle(conn net.Conn) {
 	host := normalize(vconn.Host())
 
 	// look up the correct listener
-	l, ok := m.get(host)
+	l, ok := m.Get(host)
 	if !ok {
 		m.sendError(vconn, NotFound{fmt.Errorf("Host not found: %v", host)})
 		resetDeadline(conn)
@@ -164,7 +164,7 @@ func (m *VhostMuxer) sendError(conn net.Conn, err error) {
 	m.muxErrors <- muxErr{conn: conn, err: err}
 }
 
-func (m *VhostMuxer) get(name string) (l *Listener, ok bool) {
+func (m *VhostMuxer) Get(name string) (l *Listener, ok bool) {
 	m.RLock()
 	defer m.RUnlock()
 	l, ok = m.registry[name]
@@ -183,7 +183,7 @@ func (m *VhostMuxer) get(name string) (l *Listener, ok bool) {
 	return
 }
 
-func (m *VhostMuxer) set(name string, l *Listener) error {
+func (m *VhostMuxer) Set(name string, l *Listener) error {
 	m.Lock()
 	defer m.Unlock()
 	if _, exists := m.registry[name]; exists {
@@ -253,7 +253,7 @@ func (m *HTTPMuxer) HandleError(conn net.Conn, err error) {
 // NewHTTPMuxer begins muxing HTTP connections on the given listener by inspecting
 // the HTTP Host header in new connections.
 func NewHTTPMuxer(listener net.Listener, muxTimeout time.Duration) (*HTTPMuxer, error) {
-	fn := func(c net.Conn) (Conn, error) { return HTTP(c) }
+	fn := func(c net.Conn, muxer *VhostMuxer) (Conn, error) { return HTTP(c) }
 	mux, err := NewVhostMuxer(listener, fn, muxTimeout)
 	return &HTTPMuxer{mux}, err
 }
@@ -294,7 +294,7 @@ func (m *TLSMuxer) Listen(name string) (net.Listener, error) {
 
 // NewTLSMuxer begins muxing TLS connections by inspecting the SNI extension.
 func NewTLSMuxer(listener net.Listener, muxTimeout time.Duration) (*TLSMuxer, error) {
-	fn := func(c net.Conn) (Conn, error) { return TLS(c) }
+	fn := func(c net.Conn, muxer *VhostMuxer) (Conn, error) { return TLS(c) }
 	mux, err := NewVhostMuxer(listener, fn, muxTimeout)
 	return &TLSMuxer{mux}, err
 }

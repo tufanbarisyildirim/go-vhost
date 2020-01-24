@@ -89,7 +89,7 @@ func TestHTTPMux(t *testing.T) {
 
 	resp, err = new(http.Client).Do(req)
 	if err != nil {
-		t.Fatalf("failed to make HTTP request", err)
+		t.Fatalf("failed to make HTTP request : %s", err)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -104,7 +104,7 @@ func TestHTTPMux(t *testing.T) {
 }
 
 func testMux(t *testing.T, listen, dial string) {
-	muxFn := func(c net.Conn) (Conn, error) {
+	muxFn := func(c net.Conn,muxer *VhostMuxer) (Conn, error) {
 		return fakeConn{c, dial}, nil
 	}
 
